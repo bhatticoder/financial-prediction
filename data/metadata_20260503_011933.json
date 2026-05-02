@@ -1,0 +1,19 @@
+{
+  "collection_timestamp": "20260503_011933",
+  "sources": {
+    "prices": {
+      "records": 55,
+      "columns": [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Volume",
+        "Dividends",
+        "Stock Splits",
+        "Ticker",
+        "Timestamp"
+      ]
+    }
+  }
+}
