@@ -1,13 +1,13 @@
 # Market Sentiment Analyzer - Category B Project
 
-## 📊 Project Overview
+## Project Overview
 This project implements a comprehensive market sentiment analysis system that combines:
 - **Data Ingestion**: Yahoo Finance (Gold prices), Reuters RSS feeds, Reddit posts
 - **Sentiment Analysis**: VADER (NLTK) for 3-class sentiment classification
 - **Deep Learning**: LSTM, GRU, and RNN models for time-series forecasting
 - **Frontend**: Streamlit dashboard for interactive market insights
 
-## 🎯 Project Components
+## Project Components
 
 ### 1. **Data Scrapers**
 
@@ -139,7 +139,6 @@ for name, model in models.items():
 ### 4. **Streamlit Dashboard** (`app.py`)
 
 Interactive web application for sentiment analysis and market insights.
-
 **Features:**
 - **Sentiment Analysis Tab**: Real-time text sentiment analysis
 - **Market Insights Tab**: Live market metrics and sentiment distribution
@@ -149,12 +148,10 @@ Interactive web application for sentiment analysis and market insights.
 ```bash
 streamlit run app.py
 ```
-
 Open browser at `http://localhost:8501`
 
 ---
-
-## 🚀 Installation & Setup
+## Installation & Setup
 
 ### 1. Create Virtual Environment
 ```bash
@@ -177,7 +174,7 @@ python news.py               # Scrape Reuters headlines
 
 ---
 
-## 📋 Requirements
+## Requirements
 
 All dependencies are listed in `requirements.txt`:
 
@@ -192,7 +189,7 @@ All dependencies are listed in `requirements.txt`:
 
 ---
 
-## 📊 Project Architecture
+## Project Architecture
 
 ```
 ANN Project/
@@ -208,7 +205,7 @@ ANN Project/
 
 ---
 
-## 🔄 Workflow
+## Workflow
 
 ### Data Collection Pipeline
 ```
@@ -234,31 +231,31 @@ Deploy in Streamlit dashboard
 
 ---
 
-## 🎓 Learning Objectives Met
+## Learning Objectives Met
 
-### ✅ Data Ingestion (Category B)
-- Yahoo Finance: Hourly gold prices ✅
-- Reuters RSS: Financial headlines ✅
-- Reddit PRAW: Social sentiment ✅
+### Data Ingestion (Category B)
+- Yahoo Finance: Hourly gold prices 
+- Reuters RSS: Financial headlines 
+- Reddit PRAW: Social sentiment 
 
-### ✅ Sentiment Labeling
-- VADER sentiment analysis ✅
-- 3-class classification ✅
-- Compound score thresholds ✅
+### Sentiment Labeling
+- VADER sentiment analysis 
+- 3-class classification 
+- Compound score thresholds 
 
-### ✅ Sequential Models (Minimum 3)
-- LSTM model ✅
-- GRU model ✅
-- RNN model ✅
+### Sequential Models (Minimum 3)
+- LSTM model 
+- GRU model 
+- RNN model 
 
-### ✅ Frontend
-- Streamlit dashboard ✅
-- Real-time sentiment analysis ✅
-- Market insights visualization ✅
+### Frontend
+- Streamlit dashboard 
+- Real-time sentiment analysis 
+- Market insights visualization 
 
 ---
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### Issue: ImportError for NLTK VADER
 **Solution**: The sentiment.py script automatically downloads required data.
@@ -274,7 +271,7 @@ Deploy in Streamlit dashboard
 
 ---
 
-## 📝 Example Usage
+## Example Usage
 
 ### Complete Workflow
 ```python
@@ -312,19 +309,10 @@ print("Project complete!")
 
 ---
 
-## 📚 References
+## References
 
 - **VADER**: https://github.com/cjhutto/vaderSentiment
 - **yfinance**: https://github.com/ranaroussi/yfinance
 - **TensorFlow/Keras**: https://www.tensorflow.org/
 - **Streamlit**: https://streamlit.io/
 - **PRAW**: https://praw.readthedocs.io/
-
----
-
-## 📄 License
-Educational Project - Semester 6 ANN Course
-
----
-
-*Built using GitHub Copilot prompts for code generation*
