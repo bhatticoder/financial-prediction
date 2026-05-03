@@ -234,7 +234,7 @@ def print_quick_start():
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📈 SAMPLE OUTPUT COMPARISON
+SAMPLE OUTPUT COMPARISON
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     Model Comparison Template (for your report):
@@ -252,9 +252,6 @@ def print_quick_start():
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-💡 TIPS FOR SUCCESS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     • Data is already normalized (Z-score) - ready for direct training
     • Train/test split uses temporal order to avoid data leakage
     • Start with simple LSTM model to establish baseline
@@ -264,23 +261,12 @@ def print_quick_start():
     • Cross-validate results for robustness
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📚 USEFUL LINKS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     • TensorFlow/Keras: https://www.tensorflow.org/
     • RNN Guide: https://www.tensorflow.org/guide/rnn
     • LSTM Guide: https://colah.github.io/posts/2015-08-Understanding-LSTMs/
     • VADER Sentiment: https://github.com/cjhutto/vaderSentiment
     • yfinance: https://github.com/ranaroussi/yfinance
-    • IEEE Report Format: https://www.overleaf.com/gallery/tagged/ieee
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✨ YOU'RE ALL SET! Happy Coding! 🚀
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    
+    • IEEE Report Format: https://www.overleaf.com/gallery/tagged/ieee  
     """
     print(guide)
 

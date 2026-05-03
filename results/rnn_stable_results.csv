@@ -1,0 +1,2 @@
+model,accuracy,f1_score,precision,recall,confusion_matrix,timestamp
+Reproducible_SimpleRNN,0.8,0.6666666666666666,1.0,0.5,"[[6, 0], [2, 2]]",2026-05-03T09:08:40.068733
