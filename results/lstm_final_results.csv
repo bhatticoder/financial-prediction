@@ -1,0 +1,2 @@
+model,accuracy,f1_score,precision,recall,confusion_matrix,timestamp
+LSTM_Financial_Predictor,0.4,0.5714285714285714,0.4,1.0,"[[0, 6], [0, 4]]",2026-05-04T14:02:10.959005
