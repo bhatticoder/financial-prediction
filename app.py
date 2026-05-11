@@ -1,179 +1,246 @@
-import streamlit as st
+from __future__ import annotations
+
+import os
+import json
+import shutil
+from functools import lru_cache
+from pathlib import Path
+from typing import Literal, Optional
+
+# Silence TensorFlow startup warnings before importing keras.
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
+os.environ.setdefault("TF_ENABLE_ONEDNN_OPTS", "0")
+
 import numpy as np
 import pandas as pd
-from sentiment import analyze_sentiment, get_sentiment_label_text
+import yfinance as yf
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
+from tensorflow import keras
 
-# Page configuration
-st.set_page_config(
-    page_title="Market Sentiment Analyzer",
-    page_icon="📈",
-    layout="wide"
-)
 
-st.title("📈 Market Sentiment Analyzer")
-st.markdown("---")
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+MODEL_DIR = BASE_DIR / "models"
+RESULTS_DIR = BASE_DIR / "results"
+RUNTIME_MODEL_DIR = MODEL_DIR / ".runtime"
 
-# Create tabs for different functionalities
-tab1, tab2, tab3 = st.tabs(["Sentiment Analysis", "Market Insights", "About"])
+MARKET_SYMBOL = "SPY"
+LOOKBACK = 5
+DEFAULT_ROWS = 48
+FEATURE_COLUMNS = ["Open", "High", "Low", "Close", "Volume"]
+MODEL_NAMES = Literal["gru", "lstm", "rnn"]
 
-with tab1:
-    st.header("Sentiment Analysis")
-    st.markdown("### Analyze text sentiment using VADER")
-    
-    # Text input
-    user_input = st.text_area(
-        "Enter news headline or text to analyze:",
-        placeholder="E.g., 'The stock market reached all-time highs today!'",
-        height=100
+MODEL_PATHS = {
+    "gru": MODEL_DIR / "gru.keras.zip",
+    "lstm": MODEL_DIR / "lstm_financial_model.keras.zip",
+    "rnn": MODEL_DIR / "stable_rnn_model.keras",
+}
+
+RESULTS_PATHS = {
+    "gru": RESULTS_DIR / "gru.csv",
+    "lstm": RESULTS_DIR / "lstm_final_results.csv",
+    "rnn": RESULTS_DIR / "rnn_stable_results.csv",
+}
+
+app = FastAPI(title="MarketMind AI", version="2.0.0")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+class PredictionRequest(BaseModel):
+    features: Optional[list[list[float]]] = Field(
+        default=None,
+        description="Window of OHLCV rows. The latest 5 rows are used for prediction.",
     )
-    
-    if st.button("Analyze Sentiment", type="primary"):
-        if user_input.strip():
-            # Perform sentiment analysis
-            result = analyze_sentiment(user_input)
-            sentiment_label = result['sentiment']
-            sentiment_text = get_sentiment_label_text(sentiment_label)
-            confidence = abs(result['compound_score'])
-            
-            # Display results with color coding
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.metric(
-                    "Sentiment",
-                    sentiment_text,
-                    f"{confidence:.2%} confidence"
-                )
-            
-            with col2:
-                st.metric(
-                    "Compound Score",
-                    f"{result['compound_score']:.3f}",
-                    "VADER Score"
-                )
-            
-            with col3:
-                if sentiment_label == 1:
-                    st.success("✅ Positive Impact Expected")
-                elif sentiment_label == -1:
-                    st.error("❌ Negative Impact Expected")
-                else:
-                    st.info("⚪ Neutral - Mixed Signals")
-            
-            # Detailed breakdown
-            st.markdown("### Score Breakdown")
-            breakdown_data = {
-                'Component': ['Positive', 'Negative', 'Neutral'],
-                'Score': [result['positive'], result['negative'], result['neutral']]
+
+
+def _ensure_runtime_dir() -> Path:
+    RUNTIME_MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    return RUNTIME_MODEL_DIR
+
+
+def _prepared_model_path(model_name: str) -> Path:
+    source = MODEL_PATHS[model_name]
+    if source.suffix == ".zip":
+        target = _ensure_runtime_dir() / source.stem
+        if not target.exists() or target.stat().st_mtime < source.stat().st_mtime:
+            shutil.copyfile(source, target)
+        return target
+    return source
+
+
+@lru_cache(maxsize=3)
+def _load_model(model_name: str):
+    path = _prepared_model_path(model_name)
+    return keras.models.load_model(path, compile=False)
+
+
+def _normalize_window(values: np.ndarray) -> np.ndarray:
+    array = np.asarray(values, dtype=np.float32)
+    if array.ndim != 2 or array.shape[1] != len(FEATURE_COLUMNS):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Expected a 2D window with {len(FEATURE_COLUMNS)} features.",
+        )
+
+    mean = array.mean(axis=0, keepdims=True)
+    std = array.std(axis=0, keepdims=True)
+    std[std == 0] = 1.0
+    return (array - mean) / std
+
+
+def _fetch_live_market_data(rows: int = DEFAULT_ROWS) -> pd.DataFrame:
+    history = yf.download(
+        MARKET_SYMBOL,
+        period="7d",
+        interval="1h",
+        auto_adjust=True,
+        progress=False,
+        threads=False,
+    )
+
+    if history is None or history.empty:
+        raise HTTPException(status_code=503, detail="Unable to fetch live market data right now.")
+
+    history = history.reset_index()
+    timestamp_col = "Datetime" if "Datetime" in history.columns else "Date"
+    history = history.rename(columns={timestamp_col: "timestamp"})
+
+    if isinstance(history.columns, pd.MultiIndex):
+        history.columns = [col[0] if isinstance(col, tuple) else col for col in history.columns]
+
+    history = history[["timestamp", "Open", "High", "Low", "Close", "Volume"]].copy()
+    history["timestamp"] = pd.to_datetime(history["timestamp"], utc=True, errors="coerce")
+    history = history.dropna(subset=["timestamp", "Open", "High", "Low", "Close"])
+    history["Volume"] = pd.to_numeric(history["Volume"], errors="coerce").fillna(0)
+    history = history.sort_values("timestamp").tail(rows).reset_index(drop=True)
+
+    previous_close = history["Close"].shift(1)
+    history["change_pct"] = ((history["Close"] - previous_close) / previous_close * 100).replace([np.inf, -np.inf], np.nan)
+    history["change_pct"] = history["change_pct"].fillna(0.0)
+    history["direction"] = (history["change_pct"] >= 0).astype(int)
+
+    return history
+
+
+def _records_for_frontend(df: pd.DataFrame) -> list[dict]:
+    records: list[dict] = []
+    for row in df.itertuples(index=False):
+        records.append(
+            {
+                "timestamp": pd.Timestamp(row.timestamp).isoformat(),
+                "Open": round(float(row.Open), 4),
+                "High": round(float(row.High), 4),
+                "Low": round(float(row.Low), 4),
+                "Close": round(float(row.Close), 4),
+                "Volume": int(float(row.Volume)),
+                "change_pct": round(float(row.change_pct), 4),
+                "direction": int(row.direction),
             }
-            breakdown_df = pd.DataFrame(breakdown_data)
-            
-            col1, col2 = st.columns([1, 2])
-            with col1:
-                st.dataframe(breakdown_df, use_container_width=True)
-            with col2:
-                st.bar_chart(breakdown_df.set_index('Component'))
-        else:
-            st.warning("Please enter text to analyze")
+        )
+    return records
 
-with tab2:
-    st.header("Market Insights")
-    st.markdown("### Real-time Market Analysis Dashboard")
-    
-    # Simulated market data
-    st.subheader("Market Summary")
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("Gold Price (XAU/USD)", "$2,350.50", "+0.85%")
-    with col2:
-        st.metric("S&P 500", "5,432.10", "+1.23%")
-    with col3:
-        st.metric("NASDAQ", "17,249.50", "+1.95%")
-    with col4:
-        st.metric("VIX Index", "12.45", "-2.10%")
-    
-    # Market sentiment chart
-    st.subheader("Market Sentiment Distribution")
-    sentiment_counts = {
-        'Positive': 45,
-        'Neutral': 30,
-        'Negative': 25
+
+def _prepare_prediction_window(features: np.ndarray) -> np.ndarray:
+    if features.shape[0] < LOOKBACK:
+        raise HTTPException(status_code=400, detail=f"Need at least {LOOKBACK} rows of data for prediction.")
+    window = features[-LOOKBACK:]
+    return _normalize_window(window)
+
+
+def _predict_direction(model_name: str, features: np.ndarray) -> dict:
+    model = _load_model(model_name)
+    prepared = _prepare_prediction_window(features)
+    batch = np.expand_dims(prepared, axis=0)
+
+    prediction = model.predict(batch, verbose=0)
+    probability = float(np.squeeze(prediction))
+    direction = "up" if probability >= 0.5 else "down"
+    confidence = probability if direction == "up" else 1 - probability
+
+    return {
+        "model": model_name,
+        "direction": direction,
+        "probability_up": round(probability, 6),
+        "confidence": round(confidence, 6),
+        "lookback": LOOKBACK,
+        "symbol": MARKET_SYMBOL,
+        "timeframe": "1h",
     }
-    sentiment_df = pd.DataFrame(
-        list(sentiment_counts.items()),
-        columns=['Sentiment', 'Count']
-    )
-    st.bar_chart(sentiment_df.set_index('Sentiment'))
-    
-    # Recent headlines with sentiment
-    st.subheader("Recent Headlines with Sentiment")
-    sample_headlines = [
-        {
-            'Headline': 'Federal Reserve signals potential rate cuts in 2024',
-            'Sentiment': 'Positive',
-            'Confidence': 0.87
-        },
-        {
-            'Headline': 'Tech stocks surge on AI breakthroughs',
-            'Sentiment': 'Positive',
-            'Confidence': 0.92
-        },
-        {
-            'Headline': 'Oil prices stable amid geopolitical concerns',
-            'Sentiment': 'Neutral',
-            'Confidence': 0.65
-        },
-        {
-            'Headline': 'Earnings miss leads to market sell-off',
-            'Sentiment': 'Negative',
-            'Confidence': 0.88
-        },
-    ]
-    
-    headlines_df = pd.DataFrame(sample_headlines)
-    st.dataframe(headlines_df, use_container_width=True, hide_index=True)
 
-with tab3:
-    st.header("About This Application")
-    st.markdown("""
-    ### Market Sentiment Analyzer
-    
-    This application uses advanced Natural Language Processing and Deep Learning to analyze financial news 
-    and market sentiment to help predict market movements.
-    
-    #### Key Features:
-    - **VADER Sentiment Analysis**: Real-time sentiment classification (Positive, Negative, Neutral)
-    - **Market Data Integration**: Live integration with Yahoo Finance data
-    - **News Scraping**: Reuters RSS feeds and Reddit financial communities
-    - **Deep Learning Models**: LSTM, GRU, and RNN models for time-series analysis
-    
-    #### Data Sources:
-    - Yahoo Finance (XAU/USD, stock prices)
-    - Reuters Financial News
-    - Reddit (r/wallstreetbets, r/finance)
-    
-    #### Sentiment Classification:
-    - **Positive**: Compound score > 0.05
-    - **Negative**: Compound score < -0.05
-    - **Neutral**: Compound score between -0.05 and 0.05
-    
-    #### Models Used:
-    1. **LSTM (Long Short-Term Memory)**: Best for long-term dependencies
-    2. **GRU (Gated Recurrent Unit)**: Faster training with fewer parameters
-    3. **RNN (Recurrent Neural Network)**: Baseline sequential model
-    
-    ---
-    *Built with Streamlit, TensorFlow, and NLTK*
-    """)
-    
-    st.markdown("### Project Statistics")
-    stats = {
-        'Metric': ['Total Headlines Analyzed', 'Active Models', 'Data Sources', 'Classification Classes'],
-        'Value': ['5000+', '3', '3', '3 (Positive/Neutral/Negative)']
+
+def _parse_metrics(model_name: str) -> dict:
+    path = RESULTS_PATHS[model_name]
+    if not path.exists():
+        return {"model": model_name, "accuracy": None, "f1_score": None, "precision": None, "recall": None, "loss": None}
+
+    try:
+        df = pd.read_csv(path)
+    except Exception:
+        return {"model": model_name, "accuracy": None, "f1_score": None, "precision": None, "recall": None, "loss": None}
+
+    last = df.iloc[-1].to_dict()
+
+    accuracy = last.get("accuracy", last.get("val_accuracy"))
+    if model_name == "gru" and pd.isna(accuracy):
+        accuracy = df.get("val_accuracy", pd.Series(dtype=float)).dropna().max() if "val_accuracy" in df else None
+
+    f1_score = last.get("f1_score")
+    precision = last.get("precision")
+    recall = last.get("recall")
+    loss = last.get("loss", last.get("val_loss"))
+
+    return {
+        "model": model_name,
+        "accuracy": None if pd.isna(accuracy) else round(float(accuracy), 4),
+        "f1_score": None if pd.isna(f1_score) else round(float(f1_score), 4),
+        "precision": None if pd.isna(precision) else round(float(precision), 4),
+        "recall": None if pd.isna(recall) else round(float(recall), 4),
+        "loss": None if pd.isna(loss) else round(float(loss), 4),
     }
-    stats_df = pd.DataFrame(stats)
-    st.dataframe(stats_df, use_container_width=True, hide_index=True)
 
-st.markdown("---")
-st.markdown("*Market Sentiment Analyzer v1.0 | Category B Project*")
+
+@app.get("/", response_class=FileResponse)
+def index():
+    return FileResponse(STATIC_DIR / "dashboard.html")
+
+
+@app.get("/dashboard", response_class=FileResponse)
+def dashboard():
+    return FileResponse(STATIC_DIR / "dashboard.html")
+
+
+@app.get("/api/latest")
+def api_latest(model: MODEL_NAMES = Query("gru")):
+    df = _fetch_live_market_data()
+    records = _records_for_frontend(df)
+    return records
+
+
+@app.post("/api/predict")
+def api_predict(payload: PredictionRequest, model: MODEL_NAMES = Query("gru")):
+    if payload.features is None:
+        df = _fetch_live_market_data(rows=max(DEFAULT_ROWS, LOOKBACK))
+        features = df[FEATURE_COLUMNS].to_numpy(dtype=np.float32)
+    else:
+        features = np.asarray(payload.features, dtype=np.float32)
+
+    return _predict_direction(model, features)
+
+
+@app.get("/api/metrics")
+def api_metrics(model: MODEL_NAMES = Query("gru")):
+    return _parse_metrics(model)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "models": list(MODEL_PATHS.keys()), "symbol": MARKET_SYMBOL, "timeframe": "1h"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -3,237 +3,271 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Predictor Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>MarketMind AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
+            --bg: #0b1120;
+            --panel: rgba(15, 23, 42, 0.72);
+            --panel-border: rgba(148, 163, 184, 0.14);
+            --text: #e2e8f0;
+            --muted: #94a3b8;
             --primary: #6366f1;
-            --secondary: #a855f7;
-            --bg: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
+            --primary-soft: rgba(99, 102, 241, 0.18);
             --accent: #22d3ee;
             --success: #10b981;
             --danger: #ef4444;
+            --warning: #f59e0b;
         }
 
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
             font-family: 'Outfit', sans-serif;
         }
 
         body {
-            background-color: var(--bg);
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%);
-            color: var(--text);
             min-height: 100vh;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(99, 102, 241, 0.18), transparent 32%),
+                radial-gradient(circle at top right, rgba(34, 211, 238, 0.13), transparent 28%),
+                var(--bg);
             overflow-x: hidden;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1280px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 28px;
         }
 
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
-            animation: fadeInDown 0.8s ease-out;
+            gap: 16px;
+            margin-bottom: 22px;
         }
 
-        .logo {
+        .brand {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            font-size: 1.5rem;
+            gap: 12px;
+            font-size: 1.45rem;
             font-weight: 700;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
+            letter-spacing: 0.02em;
+        }
+
+        .brand i,
+        .badge i {
+            width: 20px;
+            height: 20px;
+        }
+
+        .brand span {
+            background: linear-gradient(90deg, #a5b4fc, #22d3ee);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .status-badge {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            display: flex;
+        .badge {
+            display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(16, 185, 129, 0.1);
             border: 1px solid rgba(16, 185, 129, 0.2);
+            color: #86efac;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .subtle {
+            color: var(--muted);
+            font-size: 0.95rem;
+            margin-bottom: 18px;
         }
 
         .model-selector {
             display: flex;
-            gap: 0.5rem;
-            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin: 18px 0 24px;
         }
 
         .model-btn {
-            padding: 0.75rem 1.5rem;
-            border: 2px solid rgba(99, 102, 241, 0.3);
-            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            background: rgba(99, 102, 241, 0.08);
             color: var(--text);
-            border-radius: 0.75rem;
-            cursor: pointer;
+            padding: 12px 18px;
+            border-radius: 14px;
             font-weight: 600;
-            transition: all 0.3s ease;
-            font-size: 0.875rem;
+            cursor: pointer;
+            transition: 180ms ease;
         }
 
-        .model-btn:hover {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.2);
-        }
-
+        .model-btn:hover,
         .model-btn.active {
             background: var(--primary);
             border-color: var(--primary);
-            color: white;
+            transform: translateY(-1px);
+        }
+
+        .model-pill {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(34, 211, 238, 0.12);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            color: #7dd3fc;
+            font-weight: 600;
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 18px;
         }
 
         .card {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
-            border-radius: 1.5rem;
-            transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(99, 102, 241, 0.3);
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            border-radius: 22px;
+            padding: 20px;
+            backdrop-filter: blur(14px);
+            box-shadow: 0 16px 60px rgba(2, 6, 23, 0.22);
         }
 
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1rem;
+            gap: 12px;
+            margin-bottom: 14px;
         }
 
         .card-title {
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            font-weight: 600;
+            color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
+            font-size: 0.76rem;
+            font-weight: 700;
         }
 
         .card-value {
             font-size: 2rem;
             font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .card-note {
+            color: var(--muted);
+            margin-top: 8px;
+            font-size: 0.92rem;
         }
 
         .trend {
-            font-size: 0.875rem;
+            margin-top: 10px;
             display: flex;
             align-items: center;
-            gap: 0.25rem;
-            margin-top: 0.5rem;
+            gap: 8px;
+            font-size: 0.92rem;
         }
 
-        .trend-up { color: var(--success); }
-        .trend-down { color: var(--danger); }
+        .trend.up { color: var(--success); }
+        .trend.down { color: var(--danger); }
+        .trend.neutral { color: var(--muted); }
 
-        .chart-container {
-            grid-column: span 2;
-            height: 450px;
-            position: relative;
+        .chart-card {
+            grid-column: 1 / -1;
+            min-height: 520px;
         }
 
-        .table-container {
-            grid-column: span 3;
+        .table-card {
+            grid-column: 1 / -1;
             overflow-x: auto;
+        }
+
+        .chart-wrap {
+            height: 420px;
+            position: relative;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 1rem;
+            margin-top: 8px;
+            min-width: 900px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 14px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 0.92rem;
         }
 
         th {
-            text-align: left;
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 0.75rem;
+            color: var(--muted);
+            font-size: 0.78rem;
             text-transform: uppercase;
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            letter-spacing: 0.07em;
         }
 
-        td {
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 0.875rem;
+        .direction-up {
+            color: #86efac;
+            background: rgba(16, 185, 129, 0.12);
         }
 
-        #mainChart {
-            width: 100% !important;
-            height: 100% !important;
+        .direction-down {
+            color: #fca5a5;
+            background: rgba(239, 68, 68, 0.12);
         }
 
-        .sentiment-tag {
-            padding: 0.25rem 0.75rem;
-            border-radius: 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 600;
+        .direction-tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 72px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.8rem;
         }
 
-        .sentiment-pos { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-        .sentiment-neg { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
-        .sentiment-neu { background: rgba(148, 163, 184, 0.1); color: var(--text-muted); }
-
-        .model-indicator {
-            background: rgba(99, 102, 241, 0.2);
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            font-size: 0.75rem;
-            color: var(--accent);
-            font-weight: 600;
-        }
-
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .footer {
+            margin-top: 18px;
+            color: var(--muted);
+            font-size: 0.9rem;
         }
 
         @media (max-width: 768px) {
-            .chart-container, .table-container { grid-column: span 1; }
-            .model-selector { flex-wrap: wrap; }
+            .container { padding: 18px; }
+            header { flex-direction: column; align-items: flex-start; }
+            .card-value { font-size: 1.7rem; }
+            .chart-card { min-height: 460px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="logo">
-                <i data-lucide="line-chart"></i>
-                <span>MarketMind AI</span>
+            <div>
+                <div class="brand">
+                    <i data-lucide="line-chart"></i>
+                    <span>MarketMind AI</span>
+                </div>
+                <div class="subtle">Live financial market prediction dashboard using 1-hour chart data and trained Keras models.</div>
             </div>
-            <div class="status-badge" id="status-badge">
-                <i data-lucide="check-circle" size="16"></i>
-                <span>System Live</span>
+            <div class="badge" id="status-badge">
+                <i data-lucide="activity"></i>
+                <span>Live 1H feed active</span>
             </div>
         </header>
 
@@ -241,178 +275,192 @@
             <button class="model-btn active" data-model="gru" onclick="switchModel('gru')">GRU</button>
             <button class="model-btn" data-model="lstm" onclick="switchModel('lstm')">LSTM</button>
             <button class="model-btn" data-model="rnn" onclick="switchModel('rnn')">RNN</button>
-            <div class="model-indicator" id="model-info">Active Model: GRU</div>
+            <div class="model-pill" id="model-info">Active Model: GRU</div>
         </div>
 
         <div class="grid">
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">Latest Close (S&P 500)</span>
-                    <i data-lucide="activity" class="trend-up"></i>
+                    <div class="card-title">Latest Close</div>
+                    <i data-lucide="candlestick-chart"></i>
                 </div>
                 <div class="card-value" id="current-price">$0.00</div>
-                <div class="trend trend-up">
-                    <i data-lucide="trending-up" size="14"></i>
-                    <span id="price-change">+0.00%</span>
-                </div>
+                <div class="card-note" id="latest-time">Waiting for live market data…</div>
             </div>
 
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">Sentiment Score</span>
-                    <i data-lucide="message-square" style="color: var(--accent)"></i>
+                    <div class="card-title">1H Change</div>
+                    <i data-lucide="trending-up"></i>
                 </div>
-                <div class="card-value" id="sentiment-score">0.00</div>
-                <div class="trend" id="sentiment-trend">
-                    <span>Market Mood: Neutral</span>
-                </div>
+                <div class="card-value" id="hourly-change">0.00%</div>
+                <div class="trend neutral" id="direction-note">No data yet</div>
             </div>
 
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">Next Hour Prediction</span>
-                    <i data-lucide="brain-circuit" style="color: var(--secondary)"></i>
+                    <div class="card-title">Next Hour Prediction</div>
+                    <i data-lucide="brain-circuit"></i>
                 </div>
                 <div class="card-value" id="prediction">-</div>
-                <div class="trend">
-                    <span id="confidence">Confidence: 0%</span>
+                <div class="trend neutral">
+                    <span id="confidence">Confidence: -</span>
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">Model Performance</span>
-                    <i data-lucide="gauge" style="color: var(--success)"></i>
+                    <div class="card-title">Model Performance</div>
+                    <i data-lucide="gauge"></i>
                 </div>
-                <div class="card-value" id="f1-score" style="font-size: 1.5rem">F1: -</div>
-                <div class="trend">
-                    <span id="rmse-val">RMSE: -</span>
+                <div class="card-value" id="metric-primary" style="font-size: 1.5rem;">Acc: -</div>
+                <div class="trend neutral">
+                    <span id="metric-secondary">F1: -</span>
                 </div>
             </div>
 
-            <div class="card chart-container">
+            <div class="card chart-card">
                 <div class="card-header">
-                    <span class="card-title">Price & Sentiment Correlation</span>
+                    <div class="card-title">Live 1H Chart</div>
+                    <span class="card-note">Latest candles only</span>
                 </div>
-                <canvas id="mainChart"></canvas>
+                <div class="chart-wrap">
+                    <canvas id="mainChart"></canvas>
+                </div>
             </div>
 
-            <div class="card table-container">
+            <div class="card table-card">
                 <div class="card-header">
-                    <span class="card-title">Recent Market Data Points</span>
+                    <div class="card-title">Recent Market Data</div>
+                    <span class="card-note">Newest data fetched from Yahoo Finance</span>
                 </div>
-                <table id="data-table">
+                <table>
                     <thead>
                         <tr>
                             <th>Timestamp</th>
+                            <th>Open</th>
+                            <th>High</th>
+                            <th>Low</th>
                             <th>Close</th>
                             <th>Volume</th>
-                            <th>Sent. Score</th>
-                            <th>Pos</th>
-                            <th>Neg</th>
-                            <th>Neu</th>
                             <th>Direction</th>
                         </tr>
                     </thead>
-                    <tbody id="data-body">
-                        <!-- Data will be injected here -->
-                    </tbody>
+                    <tbody id="data-body"></tbody>
                 </table>
             </div>
         </div>
+
+        <div class="footer">Model input uses the latest 5 hourly candles from the live 1-hour feed.</div>
     </div>
 
     <script>
         lucide.createIcons();
 
+        const LOOKBACK = 5;
         let currentModel = 'gru';
+        let mainChart = null;
 
         function switchModel(model) {
             currentModel = model;
-            document.querySelectorAll('.model-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            document.querySelectorAll('.model-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelector(`[data-model="${model}"]`).classList.add('active');
             document.getElementById('model-info').innerText = `Active Model: ${model.toUpperCase()}`;
-            fetchData();
+            loadDashboard();
         }
 
-        async function fetchData() {
+        async function loadDashboard() {
             try {
                 const response = await fetch(`/api/latest?model=${currentModel}`);
                 const data = await response.json();
-                if (data.error) return;
 
-                updateDashboard(data);
-                fetchMetrics();
+                if (!Array.isArray(data) || data.length === 0) {
+                    document.getElementById('status-badge').innerHTML = '<i data-lucide="alert-triangle"></i><span>No live data available</span>';
+                    lucide.createIcons();
+                    return;
+                }
+
+                updateCards(data);
+                updateTable(data);
+                updateChart(data);
+                await loadMetrics();
+                await runPrediction(data);
+
+                document.getElementById('status-badge').innerHTML = '<i data-lucide="activity"></i><span>Live 1H feed active</span>';
+                lucide.createIcons();
             } catch (error) {
-                console.error("Error fetching data:", error);
+                console.error('Error loading dashboard:', error);
+                document.getElementById('status-badge').innerHTML = '<i data-lucide="alert-triangle"></i><span>Live feed unavailable</span>';
+                lucide.createIcons();
             }
         }
 
-        async function fetchMetrics() {
-            try {
-                const response = await fetch(`/api/metrics?model=${currentModel}`);
-                const data = await response.json();
-                document.getElementById('f1-score').innerText = `F1: ${data.f1_score}`;
-                document.getElementById('rmse-val').innerText = `RMSE: ${data.rmse}`;
-            } catch (e) {
-                console.error("Error fetching metrics:", e);
-            }
-        }
-
-        function updateDashboard(data) {
-            if (!data || data.length === 0) return;
+        function updateCards(data) {
             const latest = data[data.length - 1];
-            
-            // Update Stats
-            document.getElementById('current-price').innerText = `$${parseFloat(latest.Close).toFixed(2)}`;
-            document.getElementById('sentiment-score').innerText = parseFloat(latest.sentiment_score).toFixed(2);
-            
-            const prevClose = data[data.length - 2]?.Close || latest.Close;
-            const change = ((latest.Close - prevClose) / prevClose * 100).toFixed(2);
-            document.getElementById('price-change').innerText = `${change >= 0 ? '+' : ''}${change}%`;
-            
-            const mood = latest.sentiment_score > 0.1 ? 'Bullish' : (latest.sentiment_score < -0.1 ? 'Bearish' : 'Neutral');
-            document.getElementById('sentiment-trend').innerHTML = `<span>Market Mood: ${mood}</span>`;
+            const previous = data[data.length - 2] || latest;
 
-            // Update Table (Newest First)
+            const close = Number(latest.Close);
+            const prevClose = Number(previous.Close) || close;
+            const changePct = prevClose === 0 ? 0 : ((close - prevClose) / prevClose) * 100;
+            const directionUp = changePct >= 0;
+
+            document.getElementById('current-price').innerText = `$${close.toFixed(2)}`;
+            document.getElementById('latest-time').innerText = `Updated: ${new Date(latest.timestamp).toLocaleString()}`;
+            document.getElementById('hourly-change').innerText = `${directionUp ? '+' : ''}${changePct.toFixed(2)}%`;
+
+            const directionNote = document.getElementById('direction-note');
+            directionNote.className = `trend ${directionUp ? 'up' : 'down'}`;
+            directionNote.innerHTML = `${directionUp ? 'Bullish' : 'Bearish'} hourly move`;
+        }
+
+        function updateTable(data) {
             const tbody = document.getElementById('data-body');
             tbody.innerHTML = '';
+
             [...data].reverse().forEach(row => {
                 const tr = document.createElement('tr');
-                const date = new Date(row.timestamp).toLocaleString();
+                const directionUp = Number(row.direction) === 1;
                 tr.innerHTML = `
-                    <td>${date}</td>
-                    <td>$${parseFloat(row.Close).toFixed(2)}</td>
-                    <td>${row.Volume}</td>
-                    <td>${parseFloat(row.sentiment_score).toFixed(3)}</td>
-                    <td>${row.positive}</td>
-                    <td>${row.negative}</td>
-                    <td>${row.neutral}</td>
-                    <td><span class="sentiment-tag ${row.direction ? 'sentiment-pos' : 'sentiment-neg'}">${row.direction ? 'UP' : 'DOWN'}</span></td>
+                    <td>${new Date(row.timestamp).toLocaleString()}</td>
+                    <td>$${Number(row.Open).toFixed(2)}</td>
+                    <td>$${Number(row.High).toFixed(2)}</td>
+                    <td>$${Number(row.Low).toFixed(2)}</td>
+                    <td>$${Number(row.Close).toFixed(2)}</td>
+                    <td>${Number(row.Volume).toLocaleString()}</td>
+                    <td><span class="direction-tag ${directionUp ? 'direction-up' : 'direction-down'}">${directionUp ? 'UP' : 'DOWN'}</span></td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
 
-            // Update Chart (Oldest First)
-            updateChart(data);
-            
-            // Run Prediction
-            runPrediction(data);
+        async function loadMetrics() {
+            try {
+                const response = await fetch(`/api/metrics?model=${currentModel}`);
+                const data = await response.json();
+
+                const accuracy = data.accuracy == null ? 'N/A' : Number(data.accuracy).toFixed(4);
+                const f1 = data.f1_score == null ? 'N/A' : Number(data.f1_score).toFixed(4);
+
+                document.getElementById('metric-primary').innerText = `Acc: ${accuracy}`;
+                document.getElementById('metric-secondary').innerText = `F1: ${f1}`;
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+            }
         }
 
         async function runPrediction(data) {
-            console.log("Checking prediction eligibility. Data length:", data.length);
-            if (data.length < 24) {
-                document.getElementById('prediction').innerText = "NEED DATA";
-                document.getElementById('confidence').innerText = `Need 24h, got ${data.length}h`;
+            if (data.length < LOOKBACK) {
+                document.getElementById('prediction').innerText = 'NEED DATA';
+                document.getElementById('confidence').innerText = `Need ${LOOKBACK} candles`;
                 return;
             }
 
-            const seq = data.slice(-24).map(row => [
-                row.Open, row.High, row.Low, row.Close, row.Volume,
-                row.positive, row.negative, row.neutral, row.sentiment_score
+            const seq = data.slice(-LOOKBACK).map(row => [
+                Number(row.Open),
+                Number(row.High),
+                Number(row.Low),
+                Number(row.Close),
+                Number(row.Volume)
             ]);
 
             try {
@@ -421,77 +469,91 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ features: seq })
                 });
+
                 const result = await response.json();
-                
+                const up = result.direction === 'up';
+
                 const predEl = document.getElementById('prediction');
-                predEl.innerText = result.direction.toUpperCase();
-                predEl.style.color = result.direction === 'up' ? 'var(--success)' : 'var(--danger)';
-                document.getElementById('confidence').innerText = `Confidence: ${(result.confidence * 100).toFixed(1)}%`;
-            } catch (e) {
-                console.error("Prediction failed:", e);
-                document.getElementById('prediction').innerText = "ERROR";
+                predEl.innerText = up ? 'UP' : 'DOWN';
+                predEl.style.color = up ? 'var(--success)' : 'var(--danger)';
+
+                document.getElementById('confidence').innerText = `Confidence: ${(Number(result.confidence) * 100).toFixed(1)}%`;
+            } catch (error) {
+                console.error('Prediction failed:', error);
+                document.getElementById('prediction').innerText = 'ERROR';
+                document.getElementById('confidence').innerText = 'Confidence: -';
             }
         }
 
-        let mainChart;
         function updateChart(data) {
             const ctx = document.getElementById('mainChart').getContext('2d');
             const labels = data.map(row => new Date(row.timestamp).toLocaleTimeString());
-            const prices = data.map(row => row.Close);
-            const sentiment = data.map(row => row.sentiment_score * 1000 + (prices[0] || 5000));
+            const closes = data.map(row => Number(row.Close));
+            const volumes = data.map(row => Number(row.Volume));
 
-            if (mainChart) mainChart.destroy();
+            if (mainChart) {
+                mainChart.destroy();
+            }
 
             mainChart = new Chart(ctx, {
-                type: 'line',
                 data: {
-                    labels: labels,
+                    labels,
                     datasets: [
                         {
-                            label: 'Price',
-                            data: prices,
+                            type: 'line',
+                            label: 'Close',
+                            data: closes,
                             borderColor: '#6366f1',
-                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            backgroundColor: 'rgba(99, 102, 241, 0.15)',
                             fill: true,
-                            tension: 0.4,
-                            yAxisID: 'y'
+                            tension: 0.35,
+                            pointRadius: 2,
+                            yAxisID: 'price'
                         },
                         {
-                            label: 'Sentiment Score',
-                            data: data.map(row => row.sentiment_score),
-                            borderColor: '#22d3ee',
-                            borderDash: [5, 5],
-                            tension: 0.4,
-                            yAxisID: 'y1'
+                            type: 'bar',
+                            label: 'Volume',
+                            data: volumes,
+                            backgroundColor: 'rgba(34, 211, 238, 0.22)',
+                            borderColor: 'rgba(34, 211, 238, 0.6)',
+                            borderWidth: 1,
+                            yAxisID: 'volume'
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            grid: { drawOnChartArea: false }
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#e2e8f0' }
                         }
                     },
-                    plugins: {
-                        legend: { labels: { color: '#f8fafc' } }
+                    scales: {
+                        price: {
+                            type: 'linear',
+                            position: 'left',
+                            grid: { color: 'rgba(148, 163, 184, 0.10)' },
+                            ticks: { color: '#cbd5e1' }
+                        },
+                        volume: {
+                            type: 'linear',
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#cbd5e1' }
+                        },
+                        x: {
+                            ticks: { color: '#cbd5e1' },
+                            grid: { color: 'rgba(148, 163, 184, 0.06)' }
+                        }
                     }
                 }
             });
         }
 
-        fetchData();
-        setInterval(fetchData, 60000);
+        loadDashboard();
+        setInterval(loadDashboard, 60000);
     </script>
 </body>
 </html>
