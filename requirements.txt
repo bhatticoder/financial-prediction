@@ -4,7 +4,6 @@ praw==7.8.1
 nltk==3.9.4
 textblob==0.20.0
 tensorflow==2.21.0
-streamlit==1.57.0
 pandas==2.3.3
 numpy==2.2.6
 beautifulsoup4==4.14.3
