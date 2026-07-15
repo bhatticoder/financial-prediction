@@ -1,0 +1,10 @@
+.venv
+.venv-1
+data/
+figures/
+notebooks/
+results/
+*.tex
+*.bib
+*.csv
+__pycache__/
