@@ -1,314 +1,97 @@
-# Market Sentiment Analyzer - Category B Project
+# MarketMind AI - Financial Sentiment & Prediction Dashboard
 
 ## 📊 Project Overview
-This project implements a comprehensive market sentiment analysis system that combines:
-- **Data Ingestion**: Yahoo Finance (Gold prices), Reuters RSS feeds, Reddit posts
-- **Sentiment Analysis**: VADER (NLTK) for 3-class sentiment classification
-- **Deep Learning**: LSTM, GRU, and RNN models for time-series forecasting
-- **Frontend**: Streamlit dashboard for interactive market insights
+MarketMind AI is a comprehensive full-stack market prediction system that leverages live market data and deep learning models to predict the hourly trend of the SPY index or other commodities.
 
-## Project Components
+This project implements:
+- **Data Ingestion**: Live market data scraping via Yahoo Finance (`yfinance`) with 1-hour intervals.
+- **Deep Learning**: Powerful sequential models including GRU, LSTM, and RNN, trained on historical data.
+- **Backend API**: A highly performant FastAPI backend serving model predictions and live market metrics.
+- **Frontend Dashboard**: A premium, state-of-the-art Vanilla CSS and HTML5 dashboard featuring Lucide icons, glassmorphism UI, real-time Chart.js integrations, and seamless user experience.
 
-### 1. **Data Scrapers**
+## ✨ Features
 
-#### Yahoo Finance (`yfinance.py`)
-Fetches hourly gold (XAU/USD) price data for the last 60 days.
-
-**Usage:**
-```python
-from yfinance import fetch_gold_price_data
-
-gold_data = fetch_gold_price_data()
-print(gold_data.head())
-```
-
-**Output**: DataFrame with OHLC data saved to `market_prices.csv`
+- **Live Market Data feed**: Fetches the latest OHLCV market action.
+- **Real-Time Predictions**: Calculates probability and confidence intervals for market direction (UP/DOWN) using the last 5 continuous hourly candles.
+- **Advanced Model Selection**: Switch seamlessly between GRU, LSTM, and RNN models on the fly.
+- **Premium User Interface**: Dark mode aesthetics with dynamic chart visualizations and micro-animations.
 
 ---
 
-#### Reuters News (`news.py`)
-Scrapes financial headlines from Reuters RSS feeds (Business, Markets, Technology).
+## 🏗️ Project Architecture
 
-**Usage:**
-```python
-from news import fetch_reuters_financial_news
-
-headlines = fetch_reuters_financial_news()
-for headline in headlines:
-    print(f"Title: {headline['title']}")
-    print(f"Published: {headline['published']}")
+```
+Financial Prediction/
+├── app.py                   # FastAPI application serving endpoints & UI
+├── models/                  # Saved Keras models (GRU, LSTM, RNN)
+├── results/                 # Metrics and CSV results of trained models
+├── static/
+│   └── dashboard.html       # Premium UI dashboard
+├── vercel.json              # Vercel deployment configuration
+├── requirements.txt         # Python dependencies
+└── README.md                # This documentation
 ```
 
-**Returns**: List of dictionaries with title, date, link, and summary
+## 🚀 Installation & Local Setup
 
----
-
-#### Reddit Posts (`reddit.py`)
-Extracts top 100 posts from r/wallstreetbets and r/finance.
-
-**Setup:**
-1. Create a Reddit app: https://www.reddit.com/prefs/apps
-2. Update credentials in reddit.py:
-```python
-client_id = 'YOUR_ID'
-client_secret = 'YOUR_SECRET'
-user_agent = 'FinanceScraper'
-```
-
-**Usage:**
-```python
-from reddit import fetch_reddit_posts, save_reddit_posts_to_csv
-
-posts = fetch_reddit_posts(client_id, client_secret, user_agent)
-save_reddit_posts_to_csv(posts)
-```
-
-**Output**: `reddit_posts.csv` with posts from both subreddits
-
----
-
-### 2. **Sentiment Analysis** (`sentiment.py`)
-
-Uses NLTK VADER for 3-class sentiment classification:
-- **Positive**: Compound score > 0.05 (Label: 1)
-- **Negative**: Compound score < -0.05 (Label: -1)
-- **Neutral**: -0.05 ≤ Compound score ≤ 0.05 (Label: 0)
-
-**Usage:**
-```python
-from sentiment import analyze_sentiment, get_sentiment_label_text
-
-result = analyze_sentiment("The stock market reached all-time highs!")
-print(f"Sentiment: {get_sentiment_label_text(result['sentiment'])}")
-print(f"Score: {result['compound_score']:.3f}")
-```
-
-**Returns**: Dictionary with sentiment label, compound score, and component scores
-
----
-
-### 3. **Deep Learning Models** (`models.py`)
-
-Implements three sequential models for time-series classification:
-
-#### LSTM Model
-```python
-from models import build_lstm
-
-model = build_lstm(input_shape=(30, 4))  # 30 time steps, 4 features
-model.summary()
-```
-- LSTM layer: 50 units
-- Dropout: 0.2
-- Output: 3-class softmax
-
-#### GRU Model
-```python
-from models import build_gru
-
-model = build_gru(input_shape=(30, 4))
-```
-- GRU layer: 50 units
-- Dropout: 0.2
-- Output: 3-class softmax
-
-#### RNN Model
-```python
-from models import build_rnn
-
-model = build_rnn(input_shape=(30, 4))
-```
-- SimpleRNN layer: 50 units
-- Dropout: 0.2
-- Output: 3-class softmax
-
-**Compare All Models:**
-```python
-from models import get_all_models
-
-input_shape = (30, 4)
-models = get_all_models(input_shape)
-
-for name, model in models.items():
-    print(f"\n{name} Model:")
-    print(f"Parameters: {model.count_params():,}")
-```
-
----
-
-### 4. **Streamlit Dashboard** (`app.py`)
-
-Interactive web application for sentiment analysis and market insights.
-
-**Features:**
-- **Sentiment Analysis Tab**: Real-time text sentiment analysis
-- **Market Insights Tab**: Live market metrics and sentiment distribution
-- **About Tab**: Project information and statistics
-
-**Run the app:**
+### 1. Clone the repository
 ```bash
-streamlit run app.py
+git clone https://github.com/bhatticoder/Finance-Prediction.git
+cd Finance-Prediction
 ```
 
-Open browser at `http://localhost:8501`
-
----
-## Installation & Setup
-
-### 1. Create Virtual Environment
+### 2. Create a Virtual Environment
 ```bash
-python -m venv .venv-1
-.venv-1\Scripts\activate
+python -m venv .venv
+# On Windows
+.venv\Scripts\activate
+# On Mac/Linux
+source .venv/bin/activate
 ```
 
-### 2. Install Dependencies
+### 3. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Verify Installation
+### 4. Run the Application
+Start the FastAPI server via Uvicorn:
 ```bash
-python sentiment.py          # Test VADER sentiment analysis
-python models.py             # Build and test models
-python yfinance.py           # Fetch market data
-python news.py               # Scrape Reuters headlines
+python app.py
 ```
-
----
-## Requirements
-
-All dependencies are listed in `requirements.txt`:
-
-- **yfinance** (0.2.32): Yahoo Finance data
-- **feedparser** (6.0.10): RSS feed parsing
-- **praw** (7.7.0): Reddit API
-- **nltk** (3.8.1): VADER sentiment analysis
-- **tensorflow** (2.14.0): Deep learning models
-- **streamlit** (1.28.1): Web dashboard
-- **pandas** (2.1.3): Data manipulation
-- **numpy** (1.26.2): Numerical computing
-
-## Project Architecture
-
-```
-ANN Project/
-├── yfinance.py          # Yahoo Finance scraper
-├── news.py              # Reuters RSS scraper
-├── reddit.py            # Reddit posts scraper
-├── sentiment.py         # VADER sentiment analysis
-├── models.py            # LSTM, GRU, RNN models
-├── app.py               # Streamlit dashboard
-├── requirements.txt     # Python dependencies
-└── README.md            # This file
-```
-## Workflow
-
-### Data Collection Pipeline
-```
-Yahoo Finance Data → Sentiment Analysis
-     ↓
-Reddit Posts → Sentiment Scoring
-     ↓
-Reuters Headlines → VADER Classification
-```
-
-### Model Training Pipeline
-```
-Combined Sentiment + Market Data
-     ↓
-Prepare sequences (30 time steps)
-     ↓
-Train LSTM/GRU/RNN models
-     ↓
-Evaluate on test set
-     ↓
-Deploy in Streamlit dashboard
-```
+Open your browser at `http://127.0.0.1:8000` to view the MarketMind AI Dashboard.
 
 ---
 
-## Learning Objectives Met
+## 📡 API Endpoints
 
-### Data Ingestion (Category B)
-- Yahoo Finance: Hourly gold prices
-- Reuters RSS: Financial headlines
-- Reddit PRAW: Social sentiment
-
-### Sentiment Labeling
-- VADER sentiment analysis
-- 3-class classification
-- Compound score thresholds
-
-### Sequential Models (Minimum 3)
-- LSTM model 
-- GRU model 
-- RNN model 
-
-### Frontend
-- Streamlit dashboard 
-- Real-time sentiment analysis 
-- Market insights visualization 
+- `GET /` or `GET /dashboard`: Serves the intuitive UI dashboard.
+- `GET /api/latest?model={model_name}`: Retrieves the most recent market metrics and live data feed.
+- `POST /api/predict`: Analyzes a custom series of continuous candlesticks and returns high-confidence predictions.
+- `GET /api/metrics`: Provides evaluation metrics (Accuracy, F1 Score, Loss) for the selected AI model.
+- `GET /health`: Health-check endpoint for service monitoring.
 
 ---
 
-## Troubleshooting
+## 🌐 Deploying to Vercel
 
-### Issue: ImportError for NLTK VADER
-**Solution**: The sentiment.py script automatically downloads required data.
+This repository is optimized for Vercel deployment. 
 
-### Issue: Reddit API Authentication Failed
-**Solution**: 
-1. Ensure credentials are correct
-2. Verify your Reddit app is registered at reddit.com/prefs/apps
-3. Use correct user_agent format
+1. Ensure you have a Vercel account linked to your GitHub.
+2. Import this repository as a New Project on Vercel.
+3. Vercel will automatically detect the Python backend and `vercel.json` configuration.
+4. Set the Framework Preset to `Other`.
+5. Deploy! Vercel's Serverless Functions will handle the FastAPI routing, predicting, and serving the static dashboard on the edge.
 
-### Issue: TensorFlow GPU/CPU Warnings
-**Solution**: Normal behavior. Models will run on CPU by default if GPU not available.
+*(Note: Ensure your `requirements.txt` complies with Vercel's Serverless Memory Limits for TensorFlow model loading.)*
 
 ---
 
-## Example Usage
+## 🔧 Troubleshooting
 
-### Complete Workflow
-```python
-# Step 1: Fetch data
-from yfinance import fetch_gold_price_data
-from news import fetch_reuters_financial_news
-from sentiment import analyze_sentiment
-from models import get_all_models
-import numpy as np
-
-# Get market data
-gold_data = fetch_gold_price_data()
-
-# Get news
-headlines = fetch_reuters_financial_news()
-
-# Analyze sentiment
-for headline in headlines[:5]:
-    result = analyze_sentiment(headline['title'])
-    print(f"{headline['title']}: {result['sentiment']}")
-
-# Build models
-models = get_all_models((30, 4))
-
-# Prepare dummy data
-X_data = np.random.randn(1000, 30, 4)
-y_data = np.random.randint(0, 3, 1000)
-
-# Train LSTM
-lstm_model = models['LSTM']
-lstm_model.fit(X_data, y_data, epochs=5, batch_size=32)
-
-print("Project complete!")
-```
+- **No live data on dashboard**: Ensure your internet connection does not block `yfinance` requests.
+- **TensorFlow warnings in console**: This is normal output when GPU acceleration is missing; models will effectively default to CPU inference.
 
 ---
 
-## References
-
-- **VADER**: https://github.com/cjhutto/vaderSentiment
-- **yfinance**: https://github.com/ranaroussi/yfinance
-- **TensorFlow/Keras**: https://www.tensorflow.org/
-- **Streamlit**: https://streamlit.io/
-- **PRAW**: https://praw.readthedocs.io/
+**Built with ❤️ for advanced financial market analytics.**
